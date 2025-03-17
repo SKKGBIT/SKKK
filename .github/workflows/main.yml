@@ -1,0 +1,36 @@
+name: Update Image Daily
+
+on:
+   schedule:
+    - cron: '0 3 * * *'  # UTC 기준 03:00 -> KST(한국 시간) 기준 12:00
+  workflow_dispatch:  # 수동 실행 가능
+  
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v3
+
+      - name: Python 환경 설정
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+          
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential libffi-dev
+
+      - name: Python 패키지 설치 (필요하면 수정)
+        run: pip install -r requirements.txt || pip install pillow  # 필요한 패키지 설치
+
+      - name: Python 실행 (이미지 생성 및 업데이트)
+        run: python update_image.py  # 사용자의 코드 실행
+
+      - name: 변경사항 GitHub에 업로드
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add updated_image.png
+          git commit -m "자동 업데이트: $(date '+%Y-%m-%d')" || echo "No changes to commit"
+          git push
