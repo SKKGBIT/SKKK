@@ -31,6 +31,6 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add updated_image.png
+          git add ./output_images/safety.png
           git commit -m "자동 업데이트: $(date '+%Y-%m-%d')" || echo "No changes to commit"
           git push
