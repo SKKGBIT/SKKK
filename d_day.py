@@ -53,6 +53,7 @@ def generate_safety_images(base_image_path, output_folder, start_date):
     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
     today = datetime.now()
     days = (today - start_date_obj).days
+    days += 2
 
     # 이미지 복사
     img = base_image.copy()
