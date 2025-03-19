@@ -51,9 +51,14 @@ def generate_safety_images(base_image_path, output_folder, start_date):
     
     # 날짜 계산
     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-    today = datetime.now()
+    # 현재 UTC 시간
+    utc_now = datetime.utcnow()    
+    # UTC 시간에 9시간을 더해 한국 시간을 계산
+    korea_now = utc_now + timedelta(hours=9)    
+    # korea_now를 한국 기준 현재 시간으로 사용
+    today = korea_now
     days = (today - start_date_obj).days
-    days += 2
+    days += 1
 
     # 이미지 복사
     img = base_image.copy()
