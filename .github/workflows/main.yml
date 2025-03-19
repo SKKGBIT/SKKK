@@ -2,7 +2,7 @@ name: Update Image Daily
 
 on:
    schedule:
-      - cron: '0 3 * * *'  # UTC 기준 03:00 -> KST(한국 시간) 기준 12:00
+      - cron: '0 15 * * *'  # UTC 기준 03:00 -> KST(한국 시간) 기준 12:00
    workflow_dispatch:  # 수동 실행 가능
 
 permissions:
