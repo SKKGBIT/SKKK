@@ -91,5 +91,5 @@ def generate_safety_images(base_image_path, output_folder, start_date):
     return days
 
 # 사용 예시
-days = generate_safety_images("untitled.png", "./output_images", "2024-11-13")
-print(f"2024년 11월 13일부터 오늘까지 {days}일이 지났습니다.")
+days = generate_safety_images("untitled.png", "./output_images", "2025-05-07")
+print(f"2025년 07월 13일부터 오늘까지 {days}일이 지났습니다.")
