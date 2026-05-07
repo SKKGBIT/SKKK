@@ -85,7 +85,7 @@ def generate_safety_images(base_image_path, output_folder, start_date):
             total_width += (bbox[2] - bbox[0]) + SPACING
     
     # 이미지 저장
-    output_path = os.path.join(output_folder, f"safety1.png")
+    output_path = os.path.join(output_folder, f"safety.png")
     img.save(output_path)
     print(f"저장 완료: {output_path}")
     return days
