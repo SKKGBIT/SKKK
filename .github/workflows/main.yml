@@ -1,13 +1,13 @@
 name: Update Image Daily
 
 on:
-   schedule:
-      - cron: '0 15 * * *'  # UTC 기준 03:00 -> KST(한국 시간) 기준 12:00
-   workflow_dispatch:  # 수동 실행 가능
+  schedule:
+    - cron: '0 15 * * *'  # UTC 15:00 -> KST 00:00
+  workflow_dispatch:  # 수동 실행 가능
 
 permissions:
   contents: write
-  
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -20,15 +20,17 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: '3.x'
-          
+
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential libffi-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libffi-dev fonts-noto-cjk
 
-      - name: Python 패키지 설치 (필요하면 수정)
-        run: pip install pillow requests # 필요한 패키지 설치
+      - name: Python 패키지 설치
+        run: pip install pillow requests
 
-      - name: Python 실행 (이미지 생성 및 업데이트)
-        run: python d_day.py  # 사용자의 코드 실행
+      - name: Python 실행
+        run: python d_day.py
 
       - name: 변경사항 GitHub에 업로드
         run: |
