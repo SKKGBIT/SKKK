@@ -1,8 +1,8 @@
 """근태 주마감 일정 공지 이미지 자동 생성.
 
-- 대상기간 : 직전 주 월요일 ~ 일요일 (한국 시간 기준)
-- 제출기한 : 그 주 화요일. 단, 화요일이 한국 공휴일(대체공휴일 포함)이면
-            공휴일/주말이 끝난 다음 평일로 이동.
+- 대상기간 : 발행한 주(이번 주) 월요일 ~ 일요일 (한국 시간 기준)
+- 제출기한 : 대상기간이 끝난 뒤 다음 화요일. 단, 그 화요일이 한국 공휴일
+            (대체공휴일 포함)이면 공휴일/주말이 끝난 다음 평일로 이동.
 """
 
 import os
@@ -50,11 +50,11 @@ def fmt(d):
 def compute_dates(today):
     """today(한국 날짜) 기준으로 대상기간과 제출기한을 계산."""
     this_monday = today - timedelta(days=today.weekday())   # 이번 주 월요일
-    target_monday = this_monday - timedelta(days=7)         # 직전 주 월요일
-    target_sunday = target_monday + timedelta(days=6)       # 직전 주 일요일
+    target_monday = this_monday                             # 대상기간 = 이번 주 월요일
+    target_sunday = target_monday + timedelta(days=6)       # 이번 주 일요일
 
     kr_holidays = holidays.SouthKorea()
-    deadline = this_monday + timedelta(days=1)              # 이번 주 화요일
+    deadline = target_sunday + timedelta(days=2)            # 대상주 종료 후 다음 화요일
     # 공휴일 또는 주말이면 다음 평일로 이동
     while deadline in kr_holidays or deadline.weekday() >= 5:
         deadline += timedelta(days=1)
