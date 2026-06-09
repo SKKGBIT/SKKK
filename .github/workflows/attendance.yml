@@ -2,8 +2,8 @@ name: Update Attendance Notice
 
 on:
   schedule:
-    # 매주 월요일 00:00 KST (일 15:00 UTC) + 화요일 00:00 KST (월 15:00 UTC)
-    - cron: '0 15 * * 0,1'
+    # 매주 월·화요일 13:00 KST (= 04:00 UTC). safety(자정)와 시간 분리해 push 충돌 방지
+    - cron: '0 4 * * 1,2'
   workflow_dispatch:  # 수동 실행 가능
 
 permissions:
