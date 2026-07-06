@@ -6,6 +6,7 @@
             (대체공휴일 포함)이면 공휴일/주말이 끝난 다음 평일로 이동.
 """
 
+import calendar
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -48,19 +49,64 @@ def fmt(d):
     return f"{d.year}/{d.month:02d}/{d.day:02d}({WEEKDAY_KR[d.weekday()]})"
 
 
-def compute_dates(today):
-    """today(한국 날짜) 기준으로 대상기간과 제출기한을 계산."""
-    this_monday = today - timedelta(days=today.weekday())   # 이번 주 월요일
-    target_monday = this_monday - timedelta(days=7)         # 직전 주 월요일
-    target_sunday = target_monday + timedelta(days=6)       # 직전 주 일요일
+STATE_FILE = "attendance_state.txt"   # 마지막 대상기간 종료일(ISO)만 한 줄 저장
 
+
+def last_day_of_month(d):
+    """d가 속한 달의 말일."""
+    return d.replace(day=calendar.monthrange(d.year, d.month)[1])
+
+
+def recent_sunday(today):
+    """today 기준 가장 최근 완료된 일요일(= 직전 주 일요일)."""
+    return today - timedelta(days=today.weekday() + 1)
+
+
+def compute_deadline(today):
+    """제출기한 = 이번 주 화요일. 공휴일/주말이면 다음 평일로 이동."""
+    this_monday = today - timedelta(days=today.weekday())
     kr_holidays = holidays.SouthKorea()
     deadline = this_monday + timedelta(days=1)              # 이번 주 화요일
-    # 공휴일 또는 주말이면 다음 평일로 이동
     while deadline in kr_holidays or deadline.weekday() >= 5:
         deadline += timedelta(days=1)
+    return deadline
 
-    return target_monday, target_sunday, deadline
+
+def read_last_end():
+    """마지막으로 마감한 종료일을 상태 파일에서 읽는다(없으면 None)."""
+    if os.path.exists(STATE_FILE):
+        text = open(STATE_FILE, encoding="utf-8").read().strip()
+        if text:
+            return datetime.strptime(text, "%Y-%m-%d").date()
+    return None
+
+
+def write_last_end(d):
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        f.write(d.isoformat())
+
+
+def compute_period(today, mode, last_end):
+    """대상기간(시작, 종료)을 계산. 마지막 마감일 다음 날부터 이어서 잡는다.
+
+    - 시작 : 마지막 마감 종료일 + 1일. (상태 없으면 직전 주 월요일로 부트스트랩)
+    - 종료 : weekly    = 직전 주 일요일까지
+             month_end = 시작일이 속한 달의 말일까지 (→ 다음 실행은 자동으로 1일부터)
+    종료 < 시작 이면 아직 마감할 새 기간이 없다는 뜻이라 종료를 None 으로 반환.
+    """
+    if last_end:
+        start = last_end + timedelta(days=1)
+    else:
+        start = recent_sunday(today) - timedelta(days=6)   # 직전 주 월요일
+
+    if mode == "month_end":
+        end = min(last_day_of_month(start), today)   # 미래 날짜 방지(월 중간 오클릭 대비)
+    else:
+        end = recent_sunday(today)
+
+    if end < start:
+        return start, None
+    return start, end
 
 
 def fit_font(font_path, text, target_w):
@@ -99,12 +145,22 @@ def generate(base_image_path, output_folder):
         os.makedirs(output_folder)
 
     today = datetime.now(KST).date()
-    target_monday, target_sunday, deadline = compute_dates(today)
+    # MODE: weekly(자동 주간, 기본) / month_end(월말끊기 - 시작일 달의 말일까지 마감)
+    mode = (os.environ.get("MODE") or "weekly").strip()
 
-    period_text = f"{fmt(target_monday)}~{fmt(target_sunday)}"
+    last_end = read_last_end()
+    start, end = compute_period(today, mode, last_end)
+    if end is None:
+        print("새로 마감할 기간 없음 (시작=%s, 오늘=%s) → 이미지 유지하고 종료" % (start, today))
+        return
+
+    deadline = compute_deadline(today)
+
+    period_text = f"{fmt(start)}~{fmt(end)}"
     deadline_text = fmt(deadline)
 
     font_path = get_font_path()
+    print("모드:", mode, "| 지난 종료일:", last_end)
     print("font:", font_path)
     print("대상기간:", period_text)
     print("제출기한:", deadline_text)
@@ -120,6 +176,10 @@ def generate(base_image_path, output_folder):
     out = os.path.join(output_folder, "attendance.png")
     img.convert("RGB").save(out)
     print("저장 완료:", out)
+
+    # 이번에 마감한 종료일을 기록 → 다음 실행은 그 다음 날부터 이어서 잡는다.
+    write_last_end(end)
+    print("상태 저장:", STATE_FILE, "→", end.isoformat())
 
 
 if __name__ == "__main__":

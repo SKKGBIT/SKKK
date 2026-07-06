@@ -5,6 +5,15 @@ on:
     # 매주 월·화요일 01:00 KST (= 전날 16:00 UTC). safety(자정 00:00 KST)와 1시간 간격 → push 충돌 방지
     - cron: '0 16 * * 0,1'
   workflow_dispatch:  # 수동 실행 가능
+    inputs:
+      mode:
+        description: '기간 모드'
+        type: choice
+        required: true
+        default: weekly
+        options:
+          - weekly      # 자동 주간(직전 주까지 이어서)
+          - month_end   # 월말끊기: 그 달 말일까지 마감 (다음 실행은 자동으로 1일부터)
 
 permissions:
   contents: write
@@ -31,12 +40,15 @@ jobs:
         run: pip install pillow holidays
 
       - name: Python 실행
+        env:
+          # 스케줄 실행 시엔 값이 비어 있어 weekly로 동작. 수동 실행 시 드롭다운 값 전달.
+          MODE: ${{ inputs.mode }}
         run: python attendance.py
 
       - name: 변경사항 GitHub에 업로드
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add ./output_images/attendance.png
+          git add ./output_images/attendance.png attendance_state.txt
           git commit -m "근태 공지 자동 업데이트: $(TZ=Asia/Seoul date '+%Y-%m-%d')" || echo "No changes to commit"
           git push
