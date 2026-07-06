@@ -89,9 +89,9 @@ def write_last_end(d):
 def compute_period(today, mode, last_end):
     """대상기간(시작, 종료)을 계산. 마지막 마감일 다음 날부터 이어서 잡는다.
 
-    - 시작 : 마지막 마감 종료일 + 1일. (상태 없으면 직전 주 월요일로 부트스트랩)
-    - 종료 : weekly    = 직전 주 일요일까지
-             month_end = 시작일이 속한 달의 말일까지 (→ 다음 실행은 자동으로 1일부터)
+    - weekly      : (지난 종료일+1 | 직전 주 월요일) ~ 직전 주 일요일
+    - month_end   : (지난 종료일+1 | 직전 주 월요일) ~ 그 달 말일   (조기 마감용)
+    - month_start : 오늘이 속한 달 1일 ~ 직전 주 일요일             (다음달 시작용)
     종료 < 시작 이면 아직 마감할 새 기간이 없다는 뜻이라 종료를 None 으로 반환.
     """
     if last_end:
@@ -100,8 +100,13 @@ def compute_period(today, mode, last_end):
         start = recent_sunday(today) - timedelta(days=6)   # 직전 주 월요일
 
     if mode == "month_end":
-        end = min(last_day_of_month(start), today)   # 미래 날짜 방지(월 중간 오클릭 대비)
-    else:
+        # 조기 마감: 시작일이 속한 달의 막날까지 (언제 돌리든 항상 막날). 다음은 자동으로 1일부터.
+        end = last_day_of_month(start)
+    elif mode == "month_start":
+        # 다음달 시작: 오늘이 속한 달 1일부터 직전 주 일요일까지.
+        start = today.replace(day=1)
+        end = recent_sunday(today)
+    else:  # weekly
         end = recent_sunday(today)
 
     if end < start:
@@ -154,13 +159,18 @@ def generate(base_image_path, output_folder):
         print("새로 마감할 기간 없음 (시작=%s, 오늘=%s) → 이미지 유지하고 종료" % (start, today))
         return
 
-    deadline = compute_deadline(today)
+    # 제출기한: DEADLINE 입력값이 있으면 그대로(조기 마감용), 없으면 자동(이번 주 화요일).
+    deadline_input = (os.environ.get("DEADLINE") or "").strip()
+    if deadline_input:
+        deadline = datetime.strptime(deadline_input, "%Y-%m-%d").date()
+    else:
+        deadline = compute_deadline(today)
 
     period_text = f"{fmt(start)}~{fmt(end)}"
     deadline_text = fmt(deadline)
 
     font_path = get_font_path()
-    print("모드:", mode, "| 지난 종료일:", last_end)
+    print("모드:", mode, "| 지난 종료일:", last_end, "| 제출기한 입력:", deadline_input or "(자동)")
     print("font:", font_path)
     print("대상기간:", period_text)
     print("제출기한:", deadline_text)

@@ -12,8 +12,13 @@ on:
         required: true
         default: weekly
         options:
-          - weekly      # 자동 주간(직전 주까지 이어서)
-          - month_end   # 월말끊기: 그 달 말일까지 마감 (다음 실행은 자동으로 1일부터)
+          - weekly       # 자동 주간(직전 주 → 이번 주 화요일 마감)
+          - month_end    # 월말끊기(조기 마감): 그 달 말일까지. 제출기한은 아래 값 사용.
+          - month_start  # 다음달 시작: 그 달 1일부터. 제출기한 자동(이번 주 화요일).
+      deadline:
+        description: '제출기한 직접 지정 (YYYY-MM-DD). 비우면 자동. 월말끊기(조기 마감) 시 입력.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -41,8 +46,9 @@ jobs:
 
       - name: Python 실행
         env:
-          # 스케줄 실행 시엔 값이 비어 있어 weekly로 동작. 수동 실행 시 드롭다운 값 전달.
+          # 스케줄 실행 시엔 값이 비어 있어 weekly/자동 제출기한으로 동작. 수동 실행 시 입력값 전달.
           MODE: ${{ inputs.mode }}
+          DEADLINE: ${{ inputs.deadline }}
         run: python attendance.py
 
       - name: 변경사항 GitHub에 업로드
